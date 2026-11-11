@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCaseStore } from '../../store/caseStore';
 import { ChatBubble, TypingIndicator } from '../game/ChatBubble';
-import { MessageSquare, ArrowRight, Lock, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { MessageSquare, ArrowRight, Lock, CheckCircle2, AlertCircle, Sparkles, User, FileText } from 'lucide-react';
 
 export const CaseAnamnesisStage: React.FC = () => {
   const { 
@@ -78,55 +78,74 @@ export const CaseAnamnesisStage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content: Left (Patient Avatar), Middle (Chat), Right (Question Bank) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Patient Visual Profile */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="relative h-72 lg:h-[460px] rounded-3xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950">
+      {/* Main Content: Left (Patient Avatar & Full Summary), Middle & Right (Chat) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: single tall card — photo + scrollable info overlay */}
+        <div className="lg:col-span-4">
+          <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950 h-72 lg:h-[520px]">
             <Image
               src={currentCase.patientInfo.image}
               alt="Foto Klinis Pasien"
               fill
-              className="object-cover"
+              className="object-cover object-top"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4 p-4 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-700/70 text-xs text-slate-300 shadow-xl">
-              <div className="flex items-center justify-between mb-1">
+            {/* gradient darkens bottom half so overlay is readable */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+
+            {/* scrollable info overlay — anchored at bottom, scrolls upward */}
+            <div className="absolute bottom-0 left-0 right-0 max-h-[62%] lg:max-h-[68%] overflow-y-auto p-4 space-y-3">
+              {/* name / identity chip */}
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <span className="font-bold text-white text-sm">{currentCase.patientInfo.name}</span>
-                  <span className="text-slate-400 text-[11px] block">{currentCase.patientInfo.occupation}</span>
+                  <span className="font-bold text-white text-sm block leading-tight">{currentCase.patientInfo.name}</span>
+                  <span className="text-slate-400 text-[11px]">{currentCase.patientInfo.occupation}</span>
                 </div>
-                <span className="text-teal-400 font-mono text-[11px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30">
+                <span className="text-teal-400 font-mono text-[11px] px-2.5 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 font-semibold shrink-0">
                   {currentCase.patientInfo.age} th • {currentCase.patientInfo.gender}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-3 mb-2">
-                {currentCase.patientInfo.summary}
-              </p>
 
-              {/* Tanda Vital (Clinical Vitals HUD) */}
+              {/* Resume Kasus */}
+              <div className="p-3 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-700/70">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <FileText className="w-3.5 h-3.5 text-teal-400" />
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-teal-400">
+                    Resume Kasus &amp; Keluhan Pasien
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-200 leading-relaxed font-sans">
+                  {currentCase.patientInfo.summary}
+                </p>
+              </div>
+
+              {/* TTV */}
               {currentCase.patientInfo.vitalSigns && (
-                <div className="pt-2 border-t border-slate-700/60 grid grid-cols-3 gap-1.5 text-[10px] font-mono">
-                  <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800/80">
-                    <span className="text-slate-500 block text-[9px]">TD:</span>
-                    <span className="text-slate-200 font-bold">{currentCase.patientInfo.vitalSigns.bp}</span>
-                  </div>
-                  <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800/80">
-                    <span className="text-slate-500 block text-[9px]">HR:</span>
-                    <span className="text-teal-300 font-bold">{currentCase.patientInfo.vitalSigns.hr}</span>
-                  </div>
-                  <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800/80">
-                    <span className="text-slate-500 block text-[9px]">RR:</span>
-                    <span className="text-indigo-300 font-bold">{currentCase.patientInfo.vitalSigns.rr}</span>
-                  </div>
-                  <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800/80">
-                    <span className="text-slate-500 block text-[9px]">Suhu:</span>
-                    <span className="text-amber-300 font-bold">{currentCase.patientInfo.vitalSigns.temp}</span>
-                  </div>
-                  <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800/80 col-span-2">
-                    <span className="text-slate-500 block text-[9px]">SpO2:</span>
-                    <span className="text-emerald-300 font-bold">{currentCase.patientInfo.vitalSigns.spo2}</span>
+                <div className="p-3 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-700/70">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                    Tanda-Tanda Vital (TTV)
+                  </span>
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+                    <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">Tekanan Darah</span>
+                      <span className="text-slate-200 font-bold">{currentCase.patientInfo.vitalSigns.bp}</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">Denyut Nadi</span>
+                      <span className="text-teal-300 font-bold">{currentCase.patientInfo.vitalSigns.hr}</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">Laju Napas</span>
+                      <span className="text-indigo-300 font-bold">{currentCase.patientInfo.vitalSigns.rr}</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">Suhu Axilla</span>
+                      <span className="text-amber-300 font-bold">{currentCase.patientInfo.vitalSigns.temp}</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800 col-span-2">
+                      <span className="text-slate-500 block text-[9px]">Saturasi O2 (SpO2)</span>
+                      <span className="text-emerald-300 font-bold">{currentCase.patientInfo.vitalSigns.spo2}</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -134,10 +153,10 @@ export const CaseAnamnesisStage: React.FC = () => {
           </div>
         </div>
 
-        {/* Middle & Right Column: Clinical Interaction */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
+        {/* Right Column: Clinical Interaction — same fixed height as left card */}
+        <div className="lg:col-span-8">
           {/* Chat Container */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col h-[380px] lg:h-[460px]">
+          <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col h-72 lg:h-[520px]">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-xs font-semibold text-slate-400">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-teal-400" />
@@ -171,7 +190,7 @@ export const CaseAnamnesisStage: React.FC = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
                 {questionsState.map((q) => (
                   <button
                     key={q.id}
