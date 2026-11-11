@@ -1,42 +1,46 @@
 'use client';
 
 import React from 'react';
-import { useGameStore } from '../store/gameStore';
-import { ScoreHUD } from '../components/game/ScoreHUD';
-import { AnamnesisStage } from '../components/game/AnamnesisStage';
-import { PhysicalExamStage } from '../components/game/PhysicalExamStage';
-import { PenunjangStage } from '../components/game/PenunjangStage';
-import { DiagnosisStage } from '../components/game/DiagnosisStage';
-import { ManagementStage } from '../components/game/ManagementStage';
-import { EducationStage } from '../components/game/EducationStage';
+import { useCaseStore } from '../store/caseStore';
+import { CaseScoreHUD } from '../components/case/CaseScoreHUD';
+import { CaseAnamnesisStage } from '../components/case/CaseAnamnesisStage';
+import { CasePhysicalStage } from '../components/case/CasePhysicalStage';
+import { CasePenunjangStage } from '../components/case/CasePenunjangStage';
+import { CaseDiagnosisStage } from '../components/case/CaseDiagnosisStage';
+import { CaseManagementStage } from '../components/case/CaseManagementStage';
+import { CaseEducationStage } from '../components/case/CaseEducationStage';
+import { CaseMenuModal } from '../components/case/CaseMenuModal';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export default function GamePage() {
-  const { currentStage } = useGameStore();
+  const { currentStage, currentCaseId } = useCaseStore();
 
   const renderStage = () => {
     switch (currentStage) {
       case 'anamnesis':
-        return <AnamnesisStage key="anamnesis" />;
+        return <CaseAnamnesisStage key={`anamnesis-${currentCaseId}`} />;
       case 'physical':
-        return <PhysicalExamStage key="physical" />;
+        return <CasePhysicalStage key={`physical-${currentCaseId}`} />;
       case 'penunjang':
-        return <PenunjangStage key="penunjang" />;
+        return <CasePenunjangStage key={`penunjang-${currentCaseId}`} />;
       case 'diagnosis':
-        return <DiagnosisStage key="diagnosis" />;
+        return <CaseDiagnosisStage key={`diagnosis-${currentCaseId}`} />;
       case 'management':
-        return <ManagementStage key="management" />;
+        return <CaseManagementStage key={`management-${currentCaseId}`} />;
       case 'education':
-        return <EducationStage key="education" />;
+        return <CaseEducationStage key={`education-${currentCaseId}`} />;
       default:
-        return <AnamnesisStage key="anamnesis-default" />;
+        return <CaseAnamnesisStage key={`anamnesis-default-${currentCaseId}`} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       {/* Sticky Top Navigation HUD */}
-      <ScoreHUD />
+      <CaseScoreHUD />
+
+      {/* Case Menu Selection Modal */}
+      <CaseMenuModal />
 
       {/* Stage Progress Breadcrumb */}
       <div className="border-b border-slate-800/60 bg-slate-900/40 backdrop-blur-sm">
@@ -67,13 +71,15 @@ export default function GamePage() {
                         : 'text-slate-600'
                     }`}
                   >
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                      isActive
-                        ? 'bg-teal-500 text-white'
-                        : isCompleted
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-800 text-slate-500'
-                    }`}>
+                    <span
+                      className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                        isActive
+                          ? 'bg-teal-500 text-white'
+                          : isCompleted
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-800 text-slate-500'
+                      }`}
+                    >
                       {isCompleted ? '✓' : stage.num}
                     </span>
                     <span className="hidden sm:inline">{stage.label}</span>
@@ -92,7 +98,7 @@ export default function GamePage() {
       <main className="flex-1 pb-10">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentStage}
+            key={`${currentCaseId}-${currentStage}`}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
