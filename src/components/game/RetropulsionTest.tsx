@@ -2,45 +2,75 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, RotateCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Play, RotateCcw, AlertTriangle, CheckCircle2, ShieldCheck, Info } from 'lucide-react';
+import { useCaseStore } from '../../store/caseStore';
 
-export const RetropulsionTest: React.FC = () => {
-  const [isPulling, setIsPulling] = useState<boolean>(false);
-  const [stepPhase, setStepPhase] = useState<number>(0); // 0 = ready, 1 = pulled, 2 = step 1, 3 = step 2, 4 = step 3, 5 = unstable caught
+interface RetropulsionTestProps {
+  caseId?: number;
+}
+
+export const RetropulsionTest: React.FC<RetropulsionTestProps> = ({ caseId: propCaseId }) => {
+  const storeCaseId = useCaseStore((s) => s.currentCaseId);
+  const caseId = propCaseId || storeCaseId || 1;
+
+  // In Case 2 (Vascular Parkinsonism), pull test is NEGATIVE / NORMAL (1 step recovery).
+  // In Case 1 and Case 5, pull test is POSITIVE / UNSTABLE (3-4 steps, caught by doctor).
+  const isAbnormalPositive = caseId !== 2;
+
+  const [stepPhase, setStepPhase] = useState<number>(0);
+  // 0 = ready, 1 = pulled, 2 = step 1, 3 = step 2, 4 = step 3/caught
 
   const executePullTest = () => {
-    setIsPulling(true);
     setStepPhase(1);
 
-    setTimeout(() => setStepPhase(2), 400); // step 1 back
-    setTimeout(() => setStepPhase(3), 850); // step 2 back
-    setTimeout(() => setStepPhase(4), 1350); // step 3 back
-    setTimeout(() => {
-      setStepPhase(5); // unstable backward tilt caught by doctor
-      setIsPulling(false);
-    }, 1850);
+    if (isAbnormalPositive) {
+      // Unstable 3-4 steps backward
+      setTimeout(() => setStepPhase(2), 350); // step 1
+      setTimeout(() => setStepPhase(3), 750); // step 2
+      setTimeout(() => setStepPhase(4), 1200); // step 3-4 unstable catch
+    } else {
+      // Normal 1-step prompt corrective recovery (Case 2)
+      setTimeout(() => setStepPhase(2), 400); // step 1 corrective
+      setTimeout(() => setStepPhase(5), 900); // stable recovered!
+    }
   };
 
   const resetTest = () => {
     setStepPhase(0);
-    setIsPulling(false);
   };
 
   // Backward offsets (X axis in pixels)
-  const backwardOffsets = [0, -15, -45, -85, -135, -145];
+  // 0: ready, 1: pulled, 2: step 1, 3: step 2, 4: unstable caught, 5: stable 1-step recovery
+  const getOffsets = () => {
+    if (isAbnormalPositive) {
+      return [0, -15, -50, -95, -140];
+    }
+    return [0, -12, -40, -40, -40, -40];
+  };
+
+  const backwardOffsets = getOffsets();
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 bg-slate-900/80 rounded-2xl border border-slate-700/60 shadow-inner">
-      <div className="w-full flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+    <div className="flex flex-col items-center justify-center p-4 bg-slate-900/90 rounded-2xl border border-slate-750 shadow-xl">
+      {/* Header */}
+      <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-teal-400">Pemeriksaan Instabilitas Postural (Pull Test)</span>
-          <p className="text-xs text-slate-400">Dokter berdiri di belakang pasien, memberi tarikan mendadak ke belakang pada kedua bahu</p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400 px-2 py-0.5 rounded bg-teal-500/10 border border-teal-500/30">
+              Evaluasi Instabilitas Postural (Pull Test)
+            </span>
+            <span className="text-xs text-slate-500 font-mono">Tanda Kardinal Keempat</span>
+          </div>
+          <p className="text-xs text-slate-300">
+            Dokter berdiri di belakang pasien, memberi tarikan mendadak ke belakang pada kedua bahu untuk menilai refleks postural
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           {stepPhase === 0 ? (
             <button
               onClick={executePullTest}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-600 hover:bg-teal-500 text-white shadow-md transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 hover:bg-teal-500 text-white shadow-md transition-all"
             >
               <Play className="w-3.5 h-3.5" />
               <span>Lakukan Pull Test (Tarik Bahu)</span>
@@ -48,7 +78,7 @@ export const RetropulsionTest: React.FC = () => {
           ) : (
             <button
               onClick={resetTest}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 transition-all"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Ulangi Uji</span>
@@ -57,113 +87,162 @@ export const RetropulsionTest: React.FC = () => {
         </div>
       </div>
 
-      {/* Visual Pull Test Simulation Stage */}
-      <div className="relative w-full h-80 bg-gradient-to-b from-slate-950 to-slate-900 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-        {/* Floor grid */}
-        <div className="absolute bottom-12 left-6 right-6 h-1 bg-slate-700/80 rounded" />
-        <div className="absolute bottom-6 left-8 flex items-center gap-6 text-[10px] text-slate-500 font-mono">
-          <span>Langkah 4</span>
-          <span>Langkah 3</span>
-          <span>Langkah 2</span>
-          <span>Langkah 1</span>
-          <span>Posisi Awal</span>
+      {/* Main Simulation Stage Canvas */}
+      <div className="relative w-full h-80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center select-none shadow-inner">
+        {/* Floor Line & Step Position Markers */}
+        <div className="absolute bottom-12 left-10 right-10 h-1.5 bg-slate-750 rounded-full" />
+        <div className="absolute bottom-4 left-10 flex items-center gap-8 text-[10px] text-slate-500 font-mono tracking-wider">
+          <span>[ Titik Tangkapan ]</span>
+          <span>[ Langkah 3 ]</span>
+          <span>[ Langkah 2 ]</span>
+          <span>[ Langkah 1 ]</span>
+          <span className="text-teal-400 font-bold">[ Posisi Awal Pasien ]</span>
         </div>
 
-        {/* Status Indicator */}
-        <div className="absolute top-3 left-4 flex items-center gap-2">
+        {/* Realtime Status Banner */}
+        <div className="absolute top-3 left-4 flex items-center gap-2 z-20">
           {stepPhase === 0 && (
-            <span className="text-xs px-3 py-1 rounded-full bg-slate-900/90 border border-slate-700 text-slate-300">
-              Pasien berdiri tegak. Dokter bersiap di belakang.
+            <span className="text-xs px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-750 text-slate-300 font-mono shadow-md">
+              Pasien berdiri tegak. Dokter bersiap di belakang dengan tangan siap menangkap.
             </span>
           )}
           {stepPhase === 1 && (
-            <span className="text-xs px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 animate-pulse">
-              Tarikan mendadak ke belakang diberikan pada bahu pasien!
+            <span className="text-xs px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono animate-pulse shadow-md">
+              Tarikan mendadak ke belakang diberikan pada kedua bahu pasien!
             </span>
           )}
-          {stepPhase >= 2 && stepPhase < 5 && (
-            <span className="text-xs px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono">
-              Pasien melangkah mundur: Langkah ke-{stepPhase - 1} (Goyah / Unstable)
+          {stepPhase >= 2 && stepPhase < 4 && isAbnormalPositive && (
+            <span className="text-xs px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono shadow-md">
+              Pasien melangkah mundur: Langkah ke-{stepPhase - 1} (Goyah / Kehilangan Keseimbangan)
             </span>
           )}
-          {stepPhase === 5 && (
-            <span className="text-xs px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-semibold flex items-center gap-1.5 animate-pulse">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Retropulsi (+) Pasien mundur 3-4 langkah & ditangkap dokter!
+          {stepPhase === 4 && isAbnormalPositive && (
+            <span className="text-xs px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 font-semibold flex items-center gap-1.5 animate-pulse shadow-md">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              Retropulsion Test (+) Pasien mundur &gt;2 langkah tidak terkontrol & ditangkap dokter!
+            </span>
+          )}
+          {stepPhase === 5 && !isAbnormalPositive && (
+            <span className="text-xs px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold flex items-center gap-1.5 shadow-md">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              Pull Test Normal (-): Pasien mengoreksi posisi dalam 1 langkah tanpa jatuh!
             </span>
           )}
         </div>
 
-        {/* Actors Container: Doctor behind Patient */}
+        {/* Actors: Physician Behind & Patient in Front */}
         <div className="relative flex items-center justify-center w-full">
-          {/* Doctor Silhouette Behind */}
-          <div className="absolute left-1/2 -ml-28 bottom-2 flex flex-col items-center z-10 opacity-90">
-            {/* Doctor Head */}
-            <div className="w-10 h-10 rounded-full bg-slate-400 border-2 border-slate-300 shadow" />
-            {/* Doctor Coat */}
-            <div className="w-16 h-36 bg-slate-100 rounded-t-2xl shadow-lg border border-slate-300 flex flex-col items-center pt-2">
-              <span className="text-[9px] font-bold text-slate-800">DOKTER</span>
-              <div className="w-1 h-20 bg-slate-400 mt-2" />
-            </div>
-            {/* Doctor Hands extended to catch */}
-            <div className="absolute top-16 -right-6 flex flex-col gap-2">
-              <div className="w-12 h-3.5 bg-cyan-600 rounded-full border border-cyan-400 shadow-sm" />
-              <div className="w-12 h-3.5 bg-cyan-600 rounded-full border border-cyan-400 shadow-sm" />
-            </div>
+          {/* Physician Vector Standing Behind (Left Side in Perspective) */}
+          <div className="absolute left-1/2 -ml-36 bottom-0 flex flex-col items-center z-10 opacity-95">
+            <svg width="120" height="210" viewBox="0 0 120 210" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-xl">
+              {/* Doctor Head */}
+              <circle cx="60" cy="30" r="16" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
+              <path d="M 52 26 C 52 20 68 20 68 26 Z" fill="#475569" />
+
+              {/* Doctor White Coat Body */}
+              <path
+                d="M 40 46 L 80 46 L 85 140 L 35 140 Z"
+                fill="#f8fafc"
+                stroke="#cbd5e1"
+                strokeWidth="1.5"
+              />
+              {/* Stethoscope */}
+              <path d="M 48 50 C 48 75 72 75 72 50" stroke="#0284c7" strokeWidth="2" fill="none" />
+              <circle cx="60" cy="74" r="4" fill="#0284c7" />
+
+              {/* Doctor Arms Extended Forward to Catch */}
+              <path
+                d="M 40 55 C 55 58 75 62 105 65 L 105 78 C 75 75 55 70 40 68 Z"
+                fill="#f8fafc"
+                stroke="#cbd5e1"
+                strokeWidth="1.2"
+              />
+              {/* Cyan Glove */}
+              <rect x="100" y="64" width="16" height="15" rx="4" fill="#0891b2" stroke="#06b6d4" strokeWidth="1" />
+
+              {/* Doctor Trousers & Shoes */}
+              <rect x="42" y="140" width="16" height="58" fill="#334155" />
+              <rect x="62" y="140" width="16" height="58" fill="#334155" />
+              <rect x="38" y="198" width="22" height="10" rx="3" fill="#0f172a" />
+              <rect x="60" y="198" width="22" height="10" rx="3" fill="#0f172a" />
+            </svg>
+            <span className="text-[9px] font-mono font-bold text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800 -mt-2">
+              DOKTER (PEMERIKSA)
+            </span>
           </div>
 
-          {/* Patient Figure (Animated backward retropulsion) */}
+          {/* Patient Vector Being Perturbed Backwards */}
           <motion.div
             animate={{
-              x: backwardOffsets[stepPhase],
-              rotate: stepPhase >= 4 ? -8 : stepPhase === 1 ? -4 : 0,
+              x: backwardOffsets[Math.min(stepPhase, backwardOffsets.length - 1)],
+              rotate: stepPhase === 4 ? -8 : stepPhase === 1 ? -4 : 0,
             }}
             transition={{
               type: "spring",
               stiffness: 280,
-              damping: 20,
+              damping: 22,
             }}
-            className="relative flex flex-col items-center z-20"
+            className="relative flex flex-col items-center z-20 ml-16"
           >
-            {/* Patient Head */}
-            <div className="w-10 h-10 rounded-full bg-amber-200 border-2 border-amber-300 shadow" />
-            
-            {/* Patient Body / Gown */}
-            <div className="relative w-16 h-32 bg-teal-800 rounded-t-xl border border-teal-600/50 shadow flex flex-col items-center pt-2">
-              <span className="text-[9px] text-teal-100 font-mono">Pasien</span>
-              {/* Shoulders where doctor's force applied */}
-              {stepPhase === 1 && (
-                <div className="absolute -top-1 w-20 h-4 border-2 border-dashed border-amber-400 rounded-full animate-ping" />
-              )}
-            </div>
+            <svg width="120" height="210" viewBox="0 0 120 210" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl">
+              {/* Patient Head */}
+              <circle cx="60" cy="30" r="16" fill="#e3a778" stroke="#965c36" strokeWidth="1.5" />
+              <path d="M 50 26 C 50 18 70 18 70 26 Z" fill="#64748b" />
 
-            {/* Patient Legs stepping back */}
-            <div className="flex gap-2 -mt-1">
-              <motion.div
-                animate={stepPhase % 2 === 1 ? { rotate: [-10, 15, 0] } : {}}
-                transition={{ duration: 0.3 }}
-                className="w-4 h-16 bg-slate-700 rounded-b-md border border-slate-600"
+              {/* Patient Hospital Gown / Clothes */}
+              <path
+                d="M 40 46 L 80 46 L 86 135 L 34 135 Z"
+                fill="#0f766e"
+                stroke="#115e59"
+                strokeWidth="1.5"
               />
-              <motion.div
-                animate={stepPhase % 2 === 0 ? { rotate: [15, -10, 0] } : {}}
-                transition={{ duration: 0.3 }}
-                className="w-4 h-16 bg-slate-700 rounded-b-md border border-slate-600"
-              />
-            </div>
+              <path d="M 60 46 L 60 135" stroke="#134e4a" strokeWidth="1" strokeDasharray="3 3" />
+
+              {/* Shoulder perturbation impulse indicator */}
+              {stepPhase === 1 && (
+                <ellipse cx="60" cy="50" rx="28" ry="6" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 3" fill="none" />
+              )}
+
+              {/* Patient Arms at Side */}
+              <rect x="30" y="52" width="10" height="60" rx="4" fill="#0d9488" stroke="#115e59" strokeWidth="1" />
+              <rect x="80" y="52" width="10" height="60" rx="4" fill="#0d9488" stroke="#115e59" strokeWidth="1" />
+
+              {/* Patient Legs Stepping Backwards */}
+              <rect x="42" y="135" width="15" height="60" fill="#334155" />
+              <rect x="63" y="135" width="15" height="60" fill="#334155" />
+              <rect x="38" y="195" width="20" height="10" rx="3" fill="#1e293b" />
+              <rect x="62" y="195" width="20" height="10" rx="3" fill="#1e293b" />
+            </svg>
+            <span className="text-[9px] font-mono font-bold text-teal-300 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800 -mt-2">
+              PASIEN
+            </span>
           </motion.div>
         </div>
 
-        {/* Retropulsion metric */}
-        <div className="absolute bottom-2 right-4 text-xs font-mono text-slate-400 bg-slate-900/90 px-3 py-1 rounded-lg border border-slate-800">
-          Respons Fisiologis Normal: 1-2 langkah pemulihan
+        {/* Retropulsion Criterion Note */}
+        <div className="absolute bottom-2 right-4 text-[11px] font-mono text-slate-400 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
+          Kriteria Normal: ≤ 2 langkah korektif mandiri
         </div>
       </div>
 
-      {/* Clinical Result */}
-      <div className="w-full mt-3 p-3 bg-teal-950/30 border border-teal-500/20 rounded-xl text-xs text-slate-300 leading-relaxed flex items-center gap-2.5">
-        <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
-        <div>
-          <strong className="text-teal-300">Hasil Uji Postural:</strong> Retropulsion Test Positif - Instabilitas postural (+). Pasien membutuhkan lebih dari 2 langkah korektif (mundur 3-4 langkah tidak terkontrol) dan hampir jatuh jika tidak ditangkap oleh pemeriksa. Refleks postural terganggu secara signifikan.
+      {/* Clinical Notes Card */}
+      <div className="mt-3.5 w-full p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 flex items-start gap-3">
+        <Info className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <strong className="text-white block font-semibold">
+            Tanda Kardinal 4: Instabilitas Postural (Pull Test / Retropulsi)
+          </strong>
+          <p className="text-slate-400 text-[11px] leading-relaxed">
+            {isAbnormalPositive ? (
+              <>
+                <strong>Hasil Positif (+):</strong> Pasien membutuhkan &gt;2 langkah korektif (mengalami <em>festinasi retropulsi</em> 3-4 langkah tak terkendali) dan hampir terjatuh jika tidak segera disangga oleh dokter pemeriksa di belakangnya. Ini menunjukkan hilangnya refleks postural integratif di tingkat ganglia basalis dan batang otak.
+              </>
+            ) : (
+              <>
+                <strong>Hasil Normal (-):</strong> Pasien mampu mengoreksi titik berat tubuh (center of gravity) hanya dalam 1 langkah pendek mandiri tanpa perlu ditangkap oleh pemeriksa. Keseimbangan postural terkoordinasi dengan baik (sering dijumpai pada stadium awal atau parkinsonisme vaskular tanpa gangguan postural berat).
+              </>
+            )}
+          </p>
         </div>
       </div>
     </div>
