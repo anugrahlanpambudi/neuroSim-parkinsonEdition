@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { FingerTapping } from './FingerTapping';
-import { Footprints, Hand, CheckCircle2, Play, RotateCcw, AlertCircle, Info } from 'lucide-react';
+import { Footprints, Hand, CheckCircle2, Play, Pause, RotateCcw, AlertCircle, Info } from 'lucide-react';
 import { useCaseStore } from '../../store/caseStore';
 
 interface AkinesiaTestProps {
@@ -15,8 +14,9 @@ export const AkinesiaTest: React.FC<AkinesiaTestProps> = ({ caseId: propCaseId }
   const caseId = propCaseId || storeCaseId || 1;
 
   const [activeTab, setActiveTab] = useState<'finger' | 'toe'>('finger');
+  const [toePlaying, setToePlaying] = useState<boolean>(true);
   const [toeTapIndex, setToeTapIndex] = useState<number>(0);
-  const [toeRunning, setToeRunning] = useState<boolean>(false);
+  const [toeAngle, setToeAngle] = useState<number>(0); // 0 (flat) to ~24 (dorsiflexed)
 
   // Toe tapping amplitudes and slowing durations
   const toeDurations = caseId === 2
@@ -26,22 +26,59 @@ export const AkinesiaTest: React.FC<AkinesiaTestProps> = ({ caseId: propCaseId }
     ? [1.0, 0.75, 0.52, 0.35, 0.20] // Marked decrement in lower body
     : [1.0, 0.85, 0.70, 0.55, 0.40];
 
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (toeRunning && toeTapIndex < toeAmplitudes.length) {
-      timeout = setTimeout(() => {
-        setToeTapIndex((prev) => prev + 1);
-      }, toeDurations[toeTapIndex] || 500);
-    } else if (toeTapIndex >= toeAmplitudes.length) {
-      setToeRunning(false);
-    }
-    return () => clearTimeout(timeout);
-  }, [toeRunning, toeTapIndex, toeAmplitudes.length, toeDurations]);
+  const toeAnimRef = useRef<number>();
 
-  const startToeTap = () => {
-    setToeTapIndex(0);
-    setToeRunning(true);
-  };
+  useEffect(() => {
+    if (!toePlaying || activeTab !== 'toe') {
+      setToeAngle(0);
+      return;
+    }
+
+    let activeTap = 0;
+    let tapStartTime = performance.now();
+    let isPausingCycle = false;
+    let cyclePauseStart = 0;
+
+    const animateToe = (now: number) => {
+      if (isPausingCycle) {
+        setToeAngle(0);
+        if (now - cyclePauseStart > 1200) {
+          isPausingCycle = false;
+          activeTap = 0;
+          setToeTapIndex(0);
+          tapStartTime = now;
+        }
+      } else {
+        const curDuration = toeDurations[activeTap] || 450;
+        const curAmp = toeAmplitudes[activeTap] || 0.4;
+        const elapsed = now - tapStartTime;
+
+        if (elapsed < curDuration) {
+          const progress = elapsed / curDuration;
+          const sinFactor = Math.sin(progress * Math.PI);
+          setToeAngle(sinFactor * 24 * curAmp);
+        } else {
+          activeTap++;
+          if (activeTap < toeAmplitudes.length) {
+            setToeTapIndex(activeTap);
+            tapStartTime = now;
+          } else {
+            isPausingCycle = true;
+            cyclePauseStart = now;
+            setToeAngle(0);
+          }
+        }
+      }
+
+      toeAnimRef.current = requestAnimationFrame(animateToe);
+    };
+
+    toeAnimRef.current = requestAnimationFrame(animateToe);
+
+    return () => {
+      if (toeAnimRef.current) cancelAnimationFrame(toeAnimRef.current);
+    };
+  }, [toePlaying, activeTab, caseId]);
 
   return (
     <div className="flex flex-col p-4 bg-slate-900/90 rounded-2xl border border-slate-750 shadow-xl">
@@ -88,22 +125,27 @@ export const AkinesiaTest: React.FC<AkinesiaTestProps> = ({ caseId: propCaseId }
           {/* Sub-bar */}
           <div className="w-full flex items-center justify-between mb-3">
             <span className="text-xs text-slate-300 font-semibold font-mono">
-              MDS-UPDRS Butir 3.7: Uji Ketukan Ujung Kaki (Heel Planted, Forefoot Tap)
+              MDS-UPDRS Butir 3.7: Uji Ketukan Ujung Kaki (Tumit Menempel, Kaki Mengetuk)
             </span>
             <div className="flex items-center gap-2">
               <button
-                onClick={startToeTap}
-                disabled={toeRunning}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl shadow-md transition-all ${
-                  toeRunning ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-500 text-white'
+                onClick={() => setToePlaying(!toePlaying)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl border transition-all shadow-md ${
+                  toePlaying
+                    ? 'bg-slate-800 hover:bg-slate-750 border-slate-750 text-slate-200'
+                    : 'bg-teal-600 hover:bg-teal-500 border-teal-500 text-white'
                 }`}
               >
-                <Play className="w-3.5 h-3.5" />
-                <span>{toeRunning ? `Ketukan #${toeTapIndex + 1}...` : 'Mulai Toe Tapping'}</span>
+                {toePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                <span>{toePlaying ? 'Jeda Simulasi' : 'Mulai Simulasi'}</span>
               </button>
               <button
-                onClick={() => { setToeRunning(false); setToeTapIndex(0); }}
+                onClick={() => {
+                  setToeTapIndex(0);
+                  setToePlaying(true);
+                }}
                 className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white border border-slate-700"
+                title="Ulangi dari Awal"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -121,16 +163,16 @@ export const AkinesiaTest: React.FC<AkinesiaTestProps> = ({ caseId: propCaseId }
             {/* Metric overlay */}
             <div className="absolute top-3 left-4 flex items-center gap-2 z-20">
               <span className="text-xs px-3 py-1 rounded-xl bg-slate-900/90 border border-slate-750 text-slate-300 font-mono shadow-md">
-                Ketukan: <strong className="text-teal-400">{Math.min(toeTapIndex, 5)}/5</strong>
+                Ketukan: <strong className="text-teal-400">#{Math.min(toeTapIndex + 1, 5)} / 5</strong>
               </span>
               <span className="text-xs px-3 py-1 rounded-xl bg-slate-900/90 border border-slate-750 text-slate-300 font-mono shadow-md">
                 Amplitudo: <strong className="text-amber-400">{Math.round((toeAmplitudes[toeTapIndex] || 0.4) * 100)}%</strong>
               </span>
             </div>
 
-            {/* Anatomical Lower Leg & Foot Vector */}
+            {/* Anatomical Lower Leg & Foot Vector with Guaranteed Native SVG Rotation Pivot (58, 148) */}
             <div className="relative flex items-end ml-16 mb-2">
-              <svg width="260" height="180" viewBox="0 0 260 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl">
+              <svg width="280" height="190" viewBox="0 0 280 190" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl">
                 <defs>
                   <linearGradient id="legSkinGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#c78657" />
@@ -158,20 +200,11 @@ export const AkinesiaTest: React.FC<AkinesiaTestProps> = ({ caseId: propCaseId }
                   strokeWidth="1.2"
                 />
 
-                {/* Heel (Firmly planted at bottom anchor: x=48, y=145) */}
+                {/* Heel (Firmly planted at bottom anchor: x=58, y=148) */}
                 <circle cx="58" cy="148" r="14" fill="url(#shoeGrad)" stroke="#64748b" strokeWidth="1.2" />
 
-                {/* Dynamic Rotating Forefoot / Shoe Sole (Tapping upwards around heel anchor) */}
-                <motion.g
-                  animate={{
-                    rotate: toeRunning ? [0, -26 * (toeAmplitudes[toeTapIndex] || 0.4), 0] : 0,
-                  }}
-                  transition={{
-                    duration: (toeDurations[toeTapIndex] || 400) / 1000,
-                    ease: "easeInOut",
-                  }}
-                  style={{ originX: '58px', originY: '148px' }}
-                >
+                {/* DYNAMIC ROTATING FOREFOOT TAPPING UPWARDS AROUND HEEL ANCHOR (58, 148) */}
+                <g transform={`rotate(${-toeAngle}, 58, 148)`}>
                   {/* Foot / Shoe */}
                   <path
                     d="M 58 140 C 90 138 140 138 185 142 C 195 143 205 146 205 153 C 205 158 195 160 180 160 L 58 160 Z"
@@ -184,12 +217,12 @@ export const AkinesiaTest: React.FC<AkinesiaTestProps> = ({ caseId: propCaseId }
                   <text x="110" y="152" fill="#94a3b8" fontSize="9" fontFamily="monospace">
                     TAP
                   </text>
-                </motion.g>
+                </g>
               </svg>
             </div>
 
             {/* Bottom Status Ribbon */}
-            <div className="absolute bottom-2 left-4 right-4 h-10 bg-slate-950/90 border border-slate-800 rounded-xl flex items-center px-4 justify-between text-xs font-mono">
+            <div className="absolute bottom-2 left-4 right-4 h-10 bg-slate-950/90 border border-slate-800 rounded-xl flex items-center px-4 justify-between text-xs font-mono z-20">
               <span className="text-slate-400">Pola Gerakan Tungkai:</span>
               <span className="text-teal-300 font-semibold">
                 {caseId === 2

@@ -124,7 +124,7 @@ export const CaseMenuModal: React.FC = () => {
                     </p>
 
                     {/* Patient summary */}
-                    <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-3 mb-3">
+                    <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
                       {c.patientInfo.summary}
                     </p>
 

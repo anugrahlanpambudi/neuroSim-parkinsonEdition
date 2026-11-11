@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Play, RotateCcw, AlertTriangle, Activity, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, Activity } from 'lucide-react';
 import { useCaseStore } from '../../store/caseStore';
 
 interface FingerTappingProps {
@@ -13,70 +12,113 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
   const storeCaseId = useCaseStore((s) => s.currentCaseId);
   const caseId = propCaseId || storeCaseId || 1;
 
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [tapIndex, setTapIndex] = useState<number>(0);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [currentAmp, setCurrentAmp] = useState<number>(1.0);
+  const [tapAngle, setTapAngle] = useState<number>(0); // 0 (open) to ~26 (tapped against thumb)
 
-  // Bradykinesia amplitude decrements:
-  // Case 1 (Parkinson): Classic progressive decrement from 100% to 35% with slowing
-  // Case 2 (Vascular): Upper limb is relatively spared (minimal decrement 100% -> 85%)
-  // Case 4 (Post-encephalitic): Severe bradykinesia from the beginning (60% -> 25%)
+  // Profile amplitudes based on case
   const getAmplitudes = () => {
     if (caseId === 2) return [1.0, 0.95, 0.92, 0.90, 0.88, 0.85];
     if (caseId === 4) return [0.65, 0.55, 0.45, 0.38, 0.30, 0.22];
-    // Default Case 1 / Case 5
-    return [1.0, 0.88, 0.74, 0.58, 0.44, 0.30];
+    return [1.0, 0.86, 0.72, 0.56, 0.42, 0.28];
   };
 
   const getDurations = () => {
-    if (caseId === 2) return [200, 210, 220, 230, 235, 240];
+    if (caseId === 2) return [220, 230, 240, 250, 260, 270];
     if (caseId === 4) return [380, 440, 500, 580, 650, 720];
-    return [220, 270, 330, 400, 480, 580];
+    return [240, 290, 350, 420, 520, 640];
   };
 
   const amplitudes = getAmplitudes();
   const durations = getDurations();
 
+  const animRef = useRef<number>();
+
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (isRunning && tapIndex < amplitudes.length) {
-      timeout = setTimeout(() => {
-        setTapIndex((prev) => prev + 1);
-      }, durations[tapIndex] || 400);
-    } else if (tapIndex >= amplitudes.length) {
-      setIsRunning(false);
+    if (!isPlaying) {
+      setTapAngle(0);
+      return;
     }
-    return () => clearTimeout(timeout);
-  }, [isRunning, tapIndex, amplitudes.length, durations]);
 
-  const startSequence = () => {
-    setTapIndex(0);
-    setIsRunning(true);
-  };
+    let activeTap = 0;
+    let tapStartTime = performance.now();
+    let isPausingCycle = false;
+    let cyclePauseStart = 0;
 
-  const currentAmp = tapIndex < amplitudes.length ? amplitudes[tapIndex] : amplitudes[amplitudes.length - 1];
+    const animateFrame = (now: number) => {
+      if (isPausingCycle) {
+        setTapAngle(0);
+        if (now - cyclePauseStart > 1200) {
+          isPausingCycle = false;
+          activeTap = 0;
+          setTapIndex(0);
+          setCurrentAmp(amplitudes[0]);
+          tapStartTime = now;
+        }
+      } else {
+        const curDuration = durations[activeTap] || 400;
+        const curAmp = amplitudes[activeTap] || 0.5;
+        const elapsed = now - tapStartTime;
+
+        if (elapsed < curDuration) {
+          // Sinusoidal tap down and return: 0 -> peak -> 0
+          const progress = elapsed / curDuration;
+          const sinFactor = Math.sin(progress * Math.PI);
+          setTapAngle(sinFactor * 26 * curAmp);
+        } else {
+          // Tap completed, move to next
+          activeTap++;
+          if (activeTap < amplitudes.length) {
+            setTapIndex(activeTap);
+            setCurrentAmp(amplitudes[activeTap]);
+            tapStartTime = now;
+          } else {
+            // Completed 6 taps, enter brief cycle reset pause
+            isPausingCycle = true;
+            cyclePauseStart = now;
+            setTapAngle(0);
+          }
+        }
+      }
+
+      animRef.current = requestAnimationFrame(animateFrame);
+    };
+
+    animRef.current = requestAnimationFrame(animateFrame);
+
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [isPlaying, caseId]);
 
   return (
     <div className="flex flex-col items-center w-full">
       {/* Sub-bar */}
       <div className="w-full flex items-center justify-between mb-3">
         <span className="text-xs text-slate-300 font-semibold font-mono">
-          MDS-UPDRS Butir 3.4: Uji Ketukan Jari Telunjuk-Ibu Jari
+          MDS-UPDRS Butir 3.4: Uji Ketukan Jari Telunjuk-Ibu Jari (10 Detik)
         </span>
         <div className="flex items-center gap-2">
           <button
-            onClick={startSequence}
-            disabled={isRunning}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl shadow-md transition-all ${
-              isRunning ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-500 text-white'
+            onClick={() => setIsPlaying(!isPlaying)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl border transition-all shadow-md ${
+              isPlaying
+                ? 'bg-slate-800 hover:bg-slate-750 border-slate-750 text-slate-200'
+                : 'bg-teal-600 hover:bg-teal-500 border-teal-500 text-white'
             }`}
           >
-            <Play className="w-3.5 h-3.5" />
-            <span>{isRunning ? `Ketukan #${tapIndex + 1} / 6...` : 'Mulai Uji Ketukan (10 Detik)'}</span>
+            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            <span>{isPlaying ? 'Jeda Simulasi' : 'Mulai Simulasi'}</span>
           </button>
           <button
-            onClick={() => { setIsRunning(false); setTapIndex(0); }}
+            onClick={() => {
+              setTapIndex(0);
+              setCurrentAmp(amplitudes[0]);
+              setIsPlaying(true);
+            }}
             className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white border border-slate-700"
-            title="Reset"
+            title="Ulangi dari Awal"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -88,23 +130,23 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
         {/* Metric Overlay HUD */}
         <div className="absolute top-3 left-4 flex items-center gap-2 z-20">
           <div className="text-[11px] px-3 py-1 rounded-xl bg-slate-900/90 border border-slate-750 text-slate-300 font-mono shadow-md">
-            Ketukan: <strong className="text-teal-400">{Math.min(tapIndex, 6)}/6</strong>
+            Ketukan: <strong className="text-teal-400">#{Math.min(tapIndex + 1, 6)} / 6</strong>
           </div>
           <div className="text-[11px] px-3 py-1 rounded-xl bg-slate-900/90 border border-slate-750 text-slate-300 font-mono shadow-md">
             Amplitudo: <strong className={currentAmp < 0.5 ? 'text-rose-400' : 'text-amber-400'}>
               {Math.round(currentAmp * 100)}%
             </strong>
           </div>
-          {currentAmp < 0.5 && isRunning && (
+          {currentAmp < 0.5 && isPlaying && (
             <div className="text-[10px] px-2.5 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono animate-pulse">
               Dekremen Amplitudo (Fatigue / Slowness)
             </div>
           )}
         </div>
 
-        {/* Anatomical Vector Hand (Lateral / Oblique View) */}
+        {/* Anatomical Vector Hand with Guaranteed Native SVG Rotation Pivot (135, 110) */}
         <div className="relative flex items-center justify-center">
-          <svg width="280" height="200" viewBox="0 0 280 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl">
+          <svg width="300" height="210" viewBox="0 0 300 210" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-2xl">
             <defs>
               <linearGradient id="fingerSkinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#e3a778" />
@@ -133,7 +175,7 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
               strokeWidth="1.5"
             />
 
-            {/* Curled Middle, Ring, Little Fingers (Fixed Base) */}
+            {/* Curled Middle, Ring, Little Fingers */}
             <path
               d="M 155 135 C 170 138 185 142 195 152 C 190 162 175 160 160 152 Z"
               fill="#b37346"
@@ -147,7 +189,7 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
               strokeWidth="1.2"
             />
 
-            {/* Lower Thumb Fixed Pad (Opposition Anchor) */}
+            {/* Lower Thumb Fixed Pad (Opposition Anchor Target at x=180, y=114) */}
             <g>
               <path
                 d="M 130 115 C 145 110 165 105 185 112 C 195 116 195 125 185 128 C 168 132 150 125 135 122 Z"
@@ -155,25 +197,13 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
                 stroke="#965c36"
                 strokeWidth="1.5"
               />
-              {/* Thumb nail */}
               <ellipse cx="188" cy="118" rx="4" ry="2.5" fill="url(#fingerNailGrad)" stroke="#965c36" strokeWidth="0.6" />
               {/* Target Pad Ring on Thumb */}
               <circle cx="180" cy="114" r="5" fill="none" stroke="#14b8a6" strokeWidth="1.5" strokeDasharray="2 2" />
             </g>
 
-            {/* Dynamic Articulated Index Finger Tapping Up & Down */}
-            <motion.g
-              animate={{
-                // Tap down towards (180, 114) thumb pad then swing wide up by amplitude
-                rotate: isRunning ? [0, 32 * currentAmp, 0] : 0,
-                y: isRunning ? [0, 18 * currentAmp, 0] : 0,
-              }}
-              transition={{
-                duration: (durations[tapIndex] || 300) / 1000,
-                ease: 'easeInOut',
-              }}
-              style={{ originX: '135px', originY: '110px' }}
-            >
+            {/* DYNAMIC ARTICULATED INDEX FINGER ROTATING AROUND (135, 110) VIA NATIVE SVG TRANSFORM */}
+            <g transform={`rotate(${tapAngle}, 135, 110)`}>
               {/* Index Metacarpal to Proximal Phalanx */}
               <path
                 d="M 130 108 C 145 92 165 75 180 62 C 190 55 200 62 195 72 C 182 85 165 98 145 110 Z"
@@ -190,24 +220,24 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
               />
               {/* Index Fingernail */}
               <ellipse cx="215" cy="52" rx="4" ry="2.2" fill="url(#fingerNailGrad)" stroke="#965c36" strokeWidth="0.6" />
-            </motion.g>
+            </g>
           </svg>
         </div>
 
         {/* Amplitude Decay Sequence Graph - Bottom Strip */}
-        <div className="absolute bottom-2 left-4 right-4 h-12 bg-slate-950/90 border border-slate-800 rounded-xl flex items-center px-4 gap-4 shadow-lg">
+        <div className="absolute bottom-2 left-4 right-4 h-12 bg-slate-950/90 border border-slate-800 rounded-xl flex items-center px-4 gap-4 shadow-lg z-20">
           <div className="flex items-center gap-1.5 text-[11px] font-mono text-teal-400 shrink-0">
             <Activity className="w-4 h-4 text-teal-400" />
-            <span>Profil Ketukan:</span>
+            <span>Profil Amplitudo:</span>
           </div>
 
           <div className="flex-1 flex items-end justify-between h-7 px-2">
             {amplitudes.map((amp, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
                 <div
-                  className={`w-6 rounded-t transition-all duration-300 ${
-                    i === tapIndex && isRunning
-                      ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                  className={`w-6 rounded-t transition-all duration-200 ${
+                    i === tapIndex && isPlaying
+                      ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
                       : i < tapIndex
                       ? 'bg-teal-500'
                       : 'bg-slate-800'
@@ -219,8 +249,8 @@ export const FingerTapping: React.FC<FingerTappingProps> = ({ caseId: propCaseId
             ))}
           </div>
 
-          <div className="text-[10px] text-slate-400 font-mono shrink-0">
-            {caseId === 2 ? 'Amplitudo Lengan Relatif Stabil' : 'Fenomena Dekremen (+) Progressif'}
+          <div className="text-[10px] text-slate-300 font-mono shrink-0">
+            {caseId === 2 ? 'Amplitudo Lengan Relatif Stabil' : 'Fenomena Dekremen (+) Progresif'}
           </div>
         </div>
       </div>
