@@ -27,17 +27,17 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ sender, text, timestamp 
       )}
 
       <div
-        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 shadow-md text-sm leading-relaxed ${
+        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isDoctor
-            ? 'bg-teal-700 text-teal-50 rounded-br-xs border border-teal-600/50'
-            : 'bg-slate-800 text-slate-100 rounded-bl-xs border border-slate-700/80'
+            ? 'bg-teal-900/90 text-teal-50 rounded-br-none'
+            : 'bg-slate-800 text-slate-100 rounded-bl-none'
         }`}
       >
-        <div className="text-[10px] font-semibold tracking-wider uppercase mb-1 opacity-70">
+        <div className="text-xs font-semibold tracking-wider uppercase mb-1 text-slate-300">
           {isDoctor ? 'Dokter (Anda)' : 'Ibu Ny. S (60 th)'}
         </div>
-        <div className="font-normal whitespace-pre-wrap">{text}</div>
-        <div className="text-[10px] opacity-60 text-right mt-1.5">{timestamp}</div>
+        <div className="font-normal text-sm whitespace-pre-wrap">{text}</div>
+        <div className="text-xs text-slate-400 text-right mt-1.5">{timestamp}</div>
       </div>
 
       {isDoctor && (

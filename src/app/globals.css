@@ -65,8 +65,8 @@
     text-wrap: balance;
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent;
+  .text-pretty {
+    text-wrap: pretty;
   }
 
   .bg-slate-850 {

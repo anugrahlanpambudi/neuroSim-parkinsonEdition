@@ -236,7 +236,7 @@ export const DiagnosisStage: React.FC = () => {
               disabled={!selectedChoice}
               className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
                 selectedChoice
-                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20'
+                  ? 'bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-950'
                   : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
               }`}
             >

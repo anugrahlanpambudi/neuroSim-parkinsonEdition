@@ -65,19 +65,19 @@ export default function GamePage() {
                   <div
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                       isActive
-                        ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                        ? 'bg-teal-950 text-teal-300 border border-teal-700'
                         : isCompleted
                         ? 'text-emerald-400'
-                        : 'text-slate-600'
+                        : 'text-slate-400'
                     }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                         isActive
-                          ? 'bg-teal-500 text-white'
+                          ? 'bg-teal-700 text-teal-100'
                           : isCompleted
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-800 text-slate-500'
+                          ? 'bg-emerald-700 text-emerald-100'
+                          : 'bg-slate-800 text-slate-300'
                       }`}
                     >
                       {isCompleted ? '✓' : stage.num}
@@ -85,7 +85,7 @@ export default function GamePage() {
                     <span className="hidden sm:inline">{stage.label}</span>
                   </div>
                   {idx < arr.length - 1 && (
-                    <span className={`text-slate-700 shrink-0 ${isCompleted ? 'text-slate-600' : ''}`}>›</span>
+                    <span className={`text-slate-500 shrink-0 ${isCompleted ? 'text-slate-400' : ''}`}>›</span>
                   )}
                 </React.Fragment>
               );
@@ -110,8 +110,8 @@ export default function GamePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-900/50 py-3 text-center">
-        <p className="text-[11px] text-slate-600 font-mono">
+      <footer className="border-t border-slate-800 bg-slate-900/70 py-3.5 text-center">
+        <p className="text-xs text-slate-400 font-mono">
           NeuroSim v1.0 • Simulasi Klinis Parkinson Disease • RSUD Poli Saraf • Untuk Keperluan Edukasi Medis
         </p>
       </footer>

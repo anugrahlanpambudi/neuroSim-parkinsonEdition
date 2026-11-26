@@ -68,8 +68,8 @@ export const ArmDropTest: React.FC<ArmDropTestProps> = ({ onComplete }) => {
         <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#14b8a6_1px,transparent_1px),linear-gradient(to_bottom,#14b8a6_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
         {/* Hospital Examination Mattress */}
-        <div className="absolute bottom-6 left-12 right-12 h-16 bg-slate-850 rounded-2xl border-t-2 border-slate-700 shadow-2xl flex items-center justify-center">
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">
+        <div className="absolute bottom-6 left-12 right-12 h-16 bg-slate-850 rounded-2xl border border-slate-700 shadow-2xl flex items-center justify-center">
+          <span className="text-xs text-slate-400 uppercase tracking-widest font-mono">
             Kasur Ranap Neurologi (Permukaan Pendaratan Pasif)
           </span>
         </div>

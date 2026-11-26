@@ -43,23 +43,23 @@ export const CaseScoreHUD: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold tracking-tight text-white text-base md:text-lg">NeuroSim</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-teal-500/20 border border-teal-500/30 text-teal-300 font-medium">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-700 font-medium">
                   RSUD Poli Saraf
                 </span>
               </div>
-              <div className="text-xs text-slate-400 flex items-center gap-2">
+              <div className="text-xs text-slate-300 flex items-center gap-2">
                 <button
                   onClick={openCaseMenu}
                   className="hover:text-teal-300 transition-colors cursor-pointer flex items-center gap-1 group"
                   title="Klik untuk memilih kasus 1–5"
                 >
-                  <span className="text-slate-300 group-hover:text-teal-300 font-medium">
+                  <span className="text-slate-200 group-hover:text-teal-300 font-medium">
                     Kasus #{currentCaseId} dari 5
                   </span>
-                  <span className="text-[10px] text-teal-400 group-hover:translate-y-0.5 transition-transform">▼</span>
+                  <span className="text-xs text-teal-400 group-hover:translate-y-0.5 transition-transform">▼</span>
                 </button>
-                <span className="text-slate-600">•</span>
-                <span className="text-teal-400 font-semibold">{stageTitles[currentStage] || currentStage}</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-teal-300 font-semibold">{stageTitles[currentStage] || currentStage}</span>
               </div>
             </div>
           </div>
@@ -67,27 +67,27 @@ export const CaseScoreHUD: React.FC = () => {
           {/* Stats Bar */}
           <div className="flex items-center gap-3 md:gap-6">
             {/* Score */}
-            <div className="bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700/60 flex items-center gap-3">
-              <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+            <div className="px-3 py-1 flex items-center gap-3 border-r border-slate-800">
+              <div className="p-1.5 rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-800/60">
                 <Award className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Skor Klinis</div>
-                <div className="text-sm md:text-base font-extrabold text-indigo-300 flex items-baseline gap-1">
+                <div className="text-xs uppercase font-bold text-slate-300 tracking-wider">Skor Klinis</div>
+                <div className="text-sm md:text-base font-extrabold text-indigo-200 flex items-baseline gap-1">
                   <span>{score}</span>
-                  <span className="text-xs font-normal text-slate-500">/ 200</span>
+                  <span className="text-xs font-normal text-slate-400">/ 200</span>
                 </div>
               </div>
             </div>
 
             {/* Patient Trust */}
-            <div className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-3 ${trustColor}`}>
+            <div className={`px-3 py-1 flex items-center gap-3 ${trustColor}`}>
               <div className="p-1.5 rounded-lg bg-current/10">
                 <Heart className="w-4 h-4 fill-current" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold opacity-80 tracking-wider">Patient Trust</div>
-                <div className="text-sm md:text-base font-extrabold flex items-baseline gap-1">
+                <div className="text-xs uppercase font-bold text-slate-200 tracking-wider">Patient Trust</div>
+                <div className="text-sm md:text-base font-extrabold flex items-baseline gap-1 text-white">
                   <span>{trust}%</span>
                 </div>
               </div>
@@ -96,7 +96,7 @@ export const CaseScoreHUD: React.FC = () => {
             {/* Reset button */}
             <button
               onClick={resetCase}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1.5"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-all text-xs flex items-center gap-1.5"
               title="Reset Kasus"
             >
               <RefreshCw className="w-3.5 h-3.5" />

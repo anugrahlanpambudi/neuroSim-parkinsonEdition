@@ -70,7 +70,7 @@ export const HolmesTremor: React.FC<HolmesTremorProps> = ({ onComplete }) => {
 
         {/* Realtime Metrics HUD - Top Left */}
         <div className="absolute top-3 left-4 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-750 text-xs text-teal-300 shadow-md">
-          <Zap className="w-3.5 h-3.5 text-rose-400 animate-bounce" />
+          <Zap className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
           <span className="font-mono">
             Frekuensi: <strong className="text-white">3.2 Hz</strong> (Slow Low-Frequency Rhythm)
           </span>
